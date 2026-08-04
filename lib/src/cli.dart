@@ -109,9 +109,10 @@ Future<int> runCli(List<String> arguments) async {
   print('Temperature unit: ${options.fahrenheit ? 'F' : 'C'}');
 
   if (mode == DisplayMode.cpuFan) {
-    stderr.writeln(
-      'Warning: CPU fan speed is not implemented yet; zeros are sent for fan RPM.',
-    );
+    final fanRpm = CpuMonitor().fanRpm();
+    if (fanRpm <= 0) {
+      stderr.writeln('Warning: no readable CPU fan RPM sensor was found.');
+    }
   }
   final psu = PsuMonitor();
   if (mode == DisplayMode.psu && !psu.isAvailable) {

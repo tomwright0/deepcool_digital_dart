@@ -1415,6 +1415,22 @@ class _MonitorPageState extends State<MonitorPage> {
     });
   }
 
+  Future<void> _sendCpuFanStatus() async {
+    setState(() {
+      _isSending = true;
+      _sendStatus = '';
+    });
+    final status = await applyDisplayMode(
+      mode: DisplayMode.cpuFan,
+      cpu: _monitor,
+      gpu: _defaultGpuMonitor(),
+    );
+    setState(() {
+      _isSending = false;
+      _sendStatus = status;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1480,6 +1496,7 @@ class _MonitorPageState extends State<MonitorPage> {
     final freq = _monitor.frequencyMhz();
     final temp = _monitor.temperature(fahrenheit: false);
     final power = _cpuPowerWatts;
+    final fanRpm = _monitor.fanRpm();
     final powerWarning = power > 0 ? null : _monitor.powerWarning;
 
     return Padding(
@@ -1519,6 +1536,7 @@ class _MonitorPageState extends State<MonitorPage> {
                   Text('Frequency: ${freq > 0 ? '$freq MHz' : 'N/A'}'),
                   Text('Temperature: ${temp > 0 ? '$temp °C' : 'N/A'}'),
                   Text('Power: ${power > 0 ? '$power W' : 'N/A'}'),
+                  Text('Fan: ${fanRpm > 0 ? '$fanRpm RPM' : 'N/A'}'),
                   if (powerWarning != null)
                     Text(
                       powerWarning,
@@ -1548,6 +1566,14 @@ class _MonitorPageState extends State<MonitorPage> {
                     icon: const Icon(Icons.save),
                     label: Text(
                       _isSending ? 'Saving...' : 'Save CPU view to display',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: _isSending ? null : _sendCpuFanStatus,
+                    icon: const Icon(Icons.air),
+                    label: Text(
+                      _isSending ? 'Saving...' : 'Save CPU fan view to display',
                     ),
                   ),
                   if (_sendStatus.isNotEmpty) ...[
@@ -1628,6 +1654,7 @@ class _GpuPageState extends State<GpuPage> {
   int _usagePercent = 0;
   int _gpuPowerWatts = 0;
   int _gpuFrequency = 0;
+  int _gpuFanRpm = 0;
   int? _gpuTemperature;
   String _sendStatus = '';
   bool _isSending = false;
@@ -1681,6 +1708,7 @@ class _GpuPageState extends State<GpuPage> {
       _usagePercent = 0;
       _gpuPowerWatts = 0;
       _gpuFrequency = 0;
+      _gpuFanRpm = 0;
       _gpuTemperature = null;
       _points.clear();
     });
@@ -1692,6 +1720,7 @@ class _GpuPageState extends State<GpuPage> {
     final freq = _monitor!.frequencyMhz();
     final temp = _monitor!.temperature(fahrenheit: false);
     final power = _monitor!.powerWatts();
+    final fanRpm = _monitor!.fanRpm();
     final x = DateTime.now().millisecondsSinceEpoch / 1000.0;
 
     setState(() {
@@ -1699,6 +1728,7 @@ class _GpuPageState extends State<GpuPage> {
       _gpuFrequency = freq;
       _gpuTemperature = temp > 0 ? temp : null;
       _gpuPowerWatts = power;
+      _gpuFanRpm = fanRpm;
       _points.add(FlSpot(x, usage));
       if (_points.length > 60) _points.removeAt(0);
     });
@@ -1793,6 +1823,9 @@ class _GpuPageState extends State<GpuPage> {
                         ),
                         Text(
                           'Power: ${_gpuPowerWatts > 0 ? '$_gpuPowerWatts W' : 'N/A'}',
+                        ),
+                        Text(
+                          'Fan: ${_gpuFanRpm > 0 ? '$_gpuFanRpm RPM' : 'N/A'}',
                         ),
                         const SizedBox(height: 12),
                         const Text(

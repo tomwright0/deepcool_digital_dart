@@ -61,9 +61,11 @@ final class Ch170Display {
         );
         data[14] = _clampByte(cpu.usageSince(cpuSample));
 
-        if (activeMode == DisplayMode.cpuFrequency) {
-          _setUint16Be(data, 15, cpu.frequencyMhz());
-        }
+        _setUint16Be(
+          data,
+          15,
+          activeMode == DisplayMode.cpuFan ? cpu.fanRpm() : cpu.frequencyMhz(),
+        );
       case DisplayMode.gpu:
       case DisplayMode.gpuTemperature:
       case DisplayMode.gpuUsage:

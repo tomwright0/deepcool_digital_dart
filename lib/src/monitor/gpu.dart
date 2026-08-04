@@ -34,6 +34,7 @@ abstract interface class GpuMonitor {
   int usagePercent();
   int powerWatts();
   int frequencyMhz();
+  int fanRpm();
 }
 
 final class _NoGpu implements GpuMonitor {
@@ -62,6 +63,9 @@ final class _NoGpu implements GpuMonitor {
 
   @override
   int frequencyMhz() => 0;
+
+  @override
+  int fanRpm() => 0;
 }
 
 final class _AmdGpu implements GpuMonitor {
@@ -112,6 +116,9 @@ final class _AmdGpu implements GpuMonitor {
     final hz = _readInt('$_hwmonDir/freq1_input') ?? 0;
     return _clampWord((hz / 1000000).round());
   }
+
+  @override
+  int fanRpm() => _clampWord(_readInt('$_hwmonDir/fan1_input') ?? 0);
 }
 
 final class _IntelGpu implements GpuMonitor {
@@ -213,10 +220,16 @@ final class _IntelGpu implements GpuMonitor {
           0,
     );
   }
+
+  @override
+  int fanRpm() => _clampWord(_readInt('$_hwmonDir/fan1_input') ?? 0);
 }
 
 final class _NvidiaGpu implements GpuMonitor {
-  _NvidiaGpu(PciGpu gpu) : _gpu = gpu, _library = _openNvml() {
+  _NvidiaGpu(PciGpu gpu)
+    : _gpu = gpu,
+      _hwmonDir = _findHwmonDir(gpu.address, 'nvidia'),
+      _library = _openNvml() {
     _init = _library.lookupFunction<_NvmlInitNative, _NvmlInitDart>(
       'nvmlInit_v2',
     );
@@ -260,6 +273,7 @@ final class _NvidiaGpu implements GpuMonitor {
   }
 
   final PciGpu _gpu;
+  final String? _hwmonDir;
   final DynamicLibrary _library;
   late final Pointer<Void> _device;
   late final _NvmlInitDart _init;
@@ -337,6 +351,14 @@ final class _NvidiaGpu implements GpuMonitor {
     } finally {
       NativeMemory.free(pointer.cast<Void>());
     }
+  }
+
+  @override
+  int fanRpm() {
+    final hwmonDir = _hwmonDir;
+    return hwmonDir == null
+        ? 0
+        : _clampWord(_readInt('$hwmonDir/fan1_input') ?? 0);
   }
 }
 
@@ -473,6 +495,13 @@ final class _WindowsGpu implements GpuMonitor {
   int frequencyMhz() {
     return _clampWord(
       WindowsSensors.instance.snapshotForGpu(_gpu)?.clock?.round() ?? 0,
+    );
+  }
+
+  @override
+  int fanRpm() {
+    return _clampWord(
+      WindowsSensors.instance.snapshotForGpu(_gpu)?.fan?.round() ?? 0,
     );
   }
 }

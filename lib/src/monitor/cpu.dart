@@ -27,16 +27,29 @@ extension CpuVendorText on CpuVendor {
 final class CpuMonitor {
   CpuMonitor()
     : _temperaturePath = _findTemperatureSensor(),
+      _fanPath = _findCpuFanSensor(),
       _raplEnergyPath = _findRaplEnergyPath(),
       _raplMaxMicrojoules = _findRaplMaxEnergy();
 
   final String? _temperaturePath;
+  final String? _fanPath;
   final String? _raplEnergyPath;
   final int _raplMaxMicrojoules;
 
   bool get hasTemperature => _temperaturePath != null;
   bool get hasRapl => _raplEnergyPath != null && _raplMaxMicrojoules > 0;
   bool get hasPowerSensor => _raplEnergyPath != null;
+  bool get hasFan => Platform.isWindows
+      ? WindowsSensors.instance.snapshot.cpuFan != null
+      : _fanPath != null;
+
+  int fanRpm() {
+    if (Platform.isWindows) {
+      return _clampWord(WindowsSensors.instance.snapshot.cpuFan?.round() ?? 0);
+    }
+    final path = _fanPath;
+    return path == null ? 0 : _clampWord(_readInt(path) ?? 0);
+  }
 
   String? get powerWarning {
     if (Platform.isWindows) {
@@ -305,6 +318,38 @@ String? _findTemperatureSensor() {
     return null;
   }
 
+  candidates.sort((a, b) => b.score.compareTo(a.score));
+  return candidates.first.path;
+}
+
+String? _findCpuFanSensor() {
+  final root = Directory('/sys/class/hwmon');
+  if (!root.existsSync()) return null;
+
+  final candidates = <_TempCandidate>[];
+  for (final entity in root.listSync(followLinks: true)) {
+    final path = entity.path;
+    final driver = (_readTrimmed('$path/name') ?? '').toLowerCase();
+    if (driver.startsWith('amdgpu') ||
+        driver.startsWith('nvidia') ||
+        driver == 'i915' ||
+        driver == 'xe') {
+      continue;
+    }
+    for (var index = 1; index <= 16; index++) {
+      final input = '$path/fan${index}_input';
+      if (!File(input).existsSync()) continue;
+      final label = (_readTrimmed('$path/fan${index}_label') ?? '')
+          .toLowerCase();
+      var score = 0;
+      if (label.contains('cpu')) score += 100;
+      if (label.contains('pump')) score -= 40;
+      if (driver == 'thinkpad' && index == 1) score += 50;
+      if (index == 1) score += 10;
+      candidates.add(_TempCandidate(path: input, score: score));
+    }
+  }
+  if (candidates.isEmpty) return null;
   candidates.sort((a, b) => b.score.compareTo(a.score));
   return candidates.first.path;
 }
