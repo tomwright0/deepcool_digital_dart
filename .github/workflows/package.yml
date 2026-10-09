@@ -130,11 +130,12 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $release = Invoke-RestMethod https://api.github.com/repos/LibreHardwareMonitor/LibreHardwareMonitor/releases/latest
+          # The backend targets net48, so take the .NET Framework build, not LibreHardwareMonitor.NET.10.zip.
           $asset = $release.assets |
-            Where-Object { $_.name -like "*.zip" -and $_.name -notlike "*source*" } |
+            Where-Object { $_.name -eq "LibreHardwareMonitor.zip" } |
             Select-Object -First 1
           if (-not $asset) {
-            throw "No LibreHardwareMonitor zip asset found in latest release."
+            throw "LibreHardwareMonitor.zip (.NET Framework build) not found in latest release."
           }
           New-Item -ItemType Directory -Force -Path build\lhm | Out-Null
           Invoke-WebRequest -Uri $asset.browser_download_url -OutFile build\lhm\LibreHardwareMonitor.zip
