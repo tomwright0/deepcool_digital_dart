@@ -120,16 +120,17 @@ internal sealed class SensorMonitor : IDisposable
     {
         _computer = new Computer(ConfigSettings.Load())
         {
+            // Only enable hardware the display modes read. Motherboard is
+            // needed for the CPU fan header on the Super I/O chip. Storage
+            // stays off because polling SMART wakes sleeping hard drives.
             IsCpuEnabled = true,
             IsGpuEnabled = true,
-            IsMemoryEnabled = true,
             IsMotherboardEnabled = true,
-            // Polling SMART every update wakes sleeping hard drives, and no
-            // display mode uses storage sensors.
-            IsStorageEnabled = false,
-            IsControllerEnabled = true,
-            IsNetworkEnabled = false,
             IsPsuEnabled = true,
+            IsMemoryEnabled = false,
+            IsStorageEnabled = false,
+            IsControllerEnabled = false,
+            IsNetworkEnabled = false,
         };
     }
 
