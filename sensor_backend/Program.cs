@@ -124,7 +124,9 @@ internal sealed class SensorMonitor : IDisposable
             IsGpuEnabled = true,
             IsMemoryEnabled = true,
             IsMotherboardEnabled = true,
-            IsStorageEnabled = true,
+            // Polling SMART every update wakes sleeping hard drives, and no
+            // display mode uses storage sensors.
+            IsStorageEnabled = false,
             IsControllerEnabled = true,
             IsNetworkEnabled = false,
             IsPsuEnabled = true,
