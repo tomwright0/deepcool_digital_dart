@@ -335,19 +335,24 @@ WindowsSensorSnapshot _snapshotFromRows(List<_SensorRow> rows) {
       type: 'power',
       preferredNames: const ['package', 'cpu package'],
     ),
+    // Effective clocks include sleep time, so they read a few hundred MHz at
+    // idle. Use the actual core clock like the Linux path does.
     cpuClock: _bestValue(
       rows,
-      hardware: _isCpu,
+      hardware: (row) =>
+          _isCpu(row) && !row.name.toLowerCase().contains('effective'),
       type: 'clock',
-      preferredNames: const [
-        'cores (average effective)',
-        'cores (average)',
-        'core #1',
-        'core 1',
-      ],
+      preferredNames: const ['cores (average)', 'core #1', 'core 1'],
       preferHighest: true,
     ),
-    cpuFan: _bestValue(rows, hardware: _isCpu, type: 'fan'),
+    cpuFan:
+        _bestValue(rows, hardware: _isCpu, type: 'fan') ??
+        _bestValue(
+          rows,
+          hardware: _isMotherboardCpuFan,
+          type: 'fan',
+          preferredNames: const ['cpu fan', 'cpu'],
+        ),
     gpuTemperature: _bestValue(
       rows,
       hardware: _isGpu,
@@ -572,6 +577,13 @@ bool _isCpu(_SensorRow row) {
   return id.contains('/cpu') ||
       id.contains('/amdcpu') ||
       id.contains('/intelcpu');
+}
+
+// CPU fan headers are read by the motherboard Super I/O chip (/lpc/...), not
+// the CPU itself.
+bool _isMotherboardCpuFan(_SensorRow row) {
+  return row.identifier.toLowerCase().startsWith('/lpc/') &&
+      row.name.toLowerCase().contains('cpu');
 }
 
 bool _isGpu(_SensorRow row) {
