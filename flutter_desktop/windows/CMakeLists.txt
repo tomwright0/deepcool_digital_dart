@@ -80,12 +80,15 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
-set(HIDAPI_DLL "${PROJECT_DIR}/assets/hidapi-win/x64/hidapi.dll")
-if(EXISTS "${HIDAPI_DLL}")
-  install(FILES "${HIDAPI_DLL}"
-    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-    COMPONENT Runtime)
+# PROJECT_DIR is only defined inside the flutter/ subdirectory scope, so
+# resolve the asset relative to this file instead.
+set(HIDAPI_DLL "${CMAKE_CURRENT_SOURCE_DIR}/../assets/hidapi-win/x64/hidapi.dll")
+if(NOT EXISTS "${HIDAPI_DLL}")
+  message(FATAL_ERROR "hidapi.dll not found at ${HIDAPI_DLL}")
 endif()
+install(FILES "${HIDAPI_DLL}"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
 
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"
