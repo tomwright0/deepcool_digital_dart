@@ -9,3 +9,4 @@ sensor_backend/lib/*.dll
 sensor_backend/lib/*.pdb
 sensor_backend/lib/*.xml
 sensor_backend/lib/*.config
+packaging/windows/deps/

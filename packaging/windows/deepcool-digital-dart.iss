@@ -23,6 +23,7 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Files]
 Source: "..\..\flutter_desktop\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Excludes: "lhm\*"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "deps\PawnIO_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -32,6 +33,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
 
 [Run]
+Filename: "{tmp}\PawnIO_setup.exe"; Parameters: "-install -silent"; StatusMsg: "Installing PawnIO driver..."; Flags: runhidden waituntilterminated; Check: ShouldInstallPawnIO
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""$taskName='DeepCool Digital Dart Sensor Backend'; $user=\""$env:USERDOMAIN\$env:USERNAME\""; $action=New-ScheduledTaskAction -Execute '{app}\deepcool-sensor-backend.exe' -Argument '--port 8085'; $trigger=New-ScheduledTaskTrigger -AtLogOn; $principal=New-ScheduledTaskPrincipal -UserId $user -RunLevel Highest -LogonType Interactive; Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Force; Start-ScheduledTask -TaskName $taskName"""; Flags: runhidden waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
@@ -49,6 +51,13 @@ var
   ResultCode: Integer;
 begin
   Result := Exec(FileName, Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function ShouldInstallPawnIO: Boolean;
+begin
+  // Skip when the installer was not bundled or the PawnIO service already exists.
+  Result := FileExists(ExpandConstant('{tmp}\PawnIO_setup.exe')) and
+    not RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\PawnIO');
 end;
 
 procedure StopSensorBackend;
