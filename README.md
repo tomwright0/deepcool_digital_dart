@@ -1,5 +1,27 @@
 # DeepCool Digital Dart
 
+> **This is a fork** of
+> [RahnRazamai/deepcool_digital_dart](https://github.com/RahnRazamai/deepcool_digital_dart)
+> with Windows fixes. Upstream only accepts pull requests from collaborators,
+> so the changes live here until they can be merged upstream.
+>
+> Changes in this fork (October 2026):
+>
+> - Sensor backend no longer crashes on startup (CI bundled the .NET 10
+>   LibreHardwareMonitor build instead of the .NET Framework one).
+> - `hidapi.dll` is now included in Windows packages, so the app can send data
+>   to the display.
+> - The installer bundles and silently installs the PawnIO driver, needed for
+>   CPU temperature, power and fan sensors.
+> - CPU frequency shows the real core clock instead of the effective clock.
+> - CPU fan RPM is read from the motherboard Super I/O chip.
+> - The sensor backend only polls CPU, GPU, motherboard and PSU, so it no
+>   longer wakes sleeping hard drives.
+>
+> These fixes have been tested on Windows PCs but **not on real DeepCool
+> hardware**. Download the Windows installer from this fork's
+> [releases](https://github.com/tomwright0/deepcool_digital_dart/releases).
+
 Desktop app for DeepCool Digital displays. Linux is the most complete target;
 Windows support is available for HID display updates with limited telemetry.
 
